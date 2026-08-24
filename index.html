@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오늘의 뉴맨틀</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #f5f6f8;
+    color: #222;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 50px; }
+  header { text-align: center; margin-bottom: 20px; }
+  h1 { margin: 0 0 8px; font-size: 32px; }
+  .subtitle { color: #777; font-size: 14px; }
+  .panel {
+    background: white;
+    border: 1px solid #e2e4e8;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 18px rgba(0,0,0,.05);
+  }
+  .info {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .stat {
+    flex: 1;
+    background: #f7f8fa;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat b { display: block; font-size: 20px; margin-top: 3px; }
+  .input-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  #guess {
+    flex: 1;
+    min-width: 0;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    padding: 13px 14px;
+    font-size: 16px;
+    outline: none;
+  }
+  #guess:focus { border-color: #333; }
+  button {
+    border: 0;
+    border-radius: 10px;
+    padding: 0 20px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    background: #222;
+    color: white;
+  }
+  button:hover { opacity: .9; }
+  .message { min-height: 24px; text-align: center; font-size: 14px; color: #666; margin-bottom: 8px; }
+  .list-head {
+    display: grid;
+    grid-template-columns: 48px 1fr 90px;
+    gap: 8px;
+    padding: 9px 12px;
+    color: #888;
+    font-size: 12px;
+    border-bottom: 1px solid #eee;
+  }
+  #results { display: flex; flex-direction: column; gap: 7px; margin-top: 8px; }
+  .result {
+    display: grid;
+    grid-template-columns: 48px 1fr 90px;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f7f7f7;
+  }
+  .rank { color: #888; font-size: 13px; }
+  .word { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .score {
+    justify-self: end;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  .bar {
+    grid-column: 2 / 4;
+    height: 6px;
+    background: #e7e7e7;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .fill { height: 100%; border-radius: 99px; }
+  .hint {
+    margin-top: 18px;
+    padding: 13px;
+    background: #fafafa;
+    border-radius: 10px;
+    color: #666;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal.show { display: flex; }
+  .modal-box {
+    background: white;
+    border-radius: 18px;
+    padding: 28px;
+    width: min(420px, 100%);
+    text-align: center;
+  }
+  .modal-box h2 { margin-top: 0; }
+  .answer { font-size: 34px; font-weight: 900; margin: 14px 0; }
+  .small { color: #777; font-size: 13px; line-height: 1.6; }
+  .secondary {
+    margin-top: 12px;
+    width: 100%;
+    height: 44px;
+    background: #eee;
+    color: #222;
+  }
+  @media (max-width: 520px) {
+    .wrap { padding-top: 16px; }
+    h1 { font-size: 27px; }
+    .info { flex-direction: column; }
+    .input-row button { padding: 0 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>오늘의 뉴맨틀</h1>
+    <div class="subtitle">정답과 의미적으로 가까운 단어를 찾아보세요.</div>
+  </header>
+
+  <div class="panel">
+    <div class="info">
+      <div class="stat">오늘의 게임<b id="dateLabel">-</b></div>
+      <div class="stat">시도 횟수<b id="attempts">0</b></div>
+      <div class="stat">최고 점수<b id="bestScore">0.00</b></div>
+    </div>
+
+    <div class="input-row">
+      <input id="guess" type="text" maxlength="30" placeholder="단어를 입력하세요" autocomplete="off">
+      <button id="submitBtn">제출</button>
+    </div>
+
+    <div id="message" class="message">단어를 입력하고 제출해보세요.</div>
+
+    <div class="list-head">
+      <div>순위</div><div>단어</div><div style="text-align:right">유사도</div>
+    </div>
+    <div id="results"></div>
+
+    <div class="hint">
+      💡 <b>게임 방식</b><br>
+      점수가 100에 가까울수록 정답과 의미적으로 가깝습니다.
+      이 버전은 외부 서버 없이 GitHub Pages에서 바로 실행되도록
+      <b>내장 단어/유사도 데이터</b>를 사용하는 간단한 버전입니다.
+    </div>
+  </div>
+</div>
+
+<div id="modal" class="modal">
+  <div class="modal-box">
+    <h2>🎉 정답입니다!</h2>
+    <div>오늘의 정답</div>
+    <div id="answer" class="answer"></div>
+    <div id="resultText" class="small"></div>
+    <button class="secondary" id="closeBtn">확인</button>
+  </div>
+</div>
+
+<script>
+/*
+  ============================================================
+  뉴맨틀 간단 버전
+  ============================================================
+  - 서버가 필요하지 않습니다.
+  - GitHub Pages에서 index.html 하나만 올려도 실행됩니다.
+  - 실제 뉴맨틀처럼 수십만 단어의 AI 임베딩을 계산하는 것은 아니고,
+    아래 WORD_BANK의 유사도 그룹을 이용해 게임을 구현합니다.
+  - 나중에 실제 의미 유사도 API/서버를 붙이면 확장할 수 있습니다.
+*/
+
+const WORD_BANK = {
+  "바다": {
+    "바다":100, "해변":91, "파도":89, "해수욕장":88, "물":82,
+    "섬":78, "수영":76, "어촌":73, "선박":70, "배":68,
+    "항구":66, "여행":61, "휴가":60, "모래":59, "하늘":45,
+    "강":43, "호수":42, "비":35, "산":22, "자동차":8, "컴퓨터":4
+  },
+  "사과": {
+    "사과":100, "과일":94, "배":88, "귤":82, "포도":81,
+    "딸기":80, "복숭아":78, "바나나":76, "농장":68, "나무":65,
+    "주스":62, "음식":54, "식사":46, "채소":43, "빵":31,
+    "자동차":8, "컴퓨터":4, "바다":10
+  },
+  "학교": {
+    "학교":100, "학생":94, "선생님":92, "교실":91, "공부":89,
+    "교육":87, "수업":85, "시험":82, "대학":77, "책":68,
+    "친구":64, "졸업":62, "학원":59, "연필":51, "직장":28,
+    "자동차":9, "바다":6
+  },
+  "컴퓨터": {
+    "컴퓨터":100, "노트북":94, "키보드":89, "마우스":88, "모니터":84,
+    "인터넷":80, "프로그램":78, "소프트웨어":76, "게임":73, "서버":68,
+    "파일":64, "윈도우":61, "스마트폰":55, "전자":48, "책":22,
+    "바다":5, "사과":4
+  },
+  "자동차": {
+    "자동차":100, "차":97, "운전":91, "도로":87, "버스":82,
+    "택시":80, "트럭":76, "교통":74, "주차":71, "엔진":69,
+    "바퀴":66, "여행":53, "기차":45, "비행기":40, "컴퓨터":18,
+    "사과":6, "바다":8
+  },
+  "강아지": {
+    "강아지":100, "개":98, "반려견":96, "고양이":82, "동물":80,
+    "애완동물":78, "산책":75, "꼬리":70, "사료":67, "공원":61,
+    "사람":48, "집":45, "고기":36, "자동차":10, "컴퓨터":5
+  }
+};
+
+// 날짜마다 정답이 바뀌도록 설정
+const DAILY_WORDS = ["바다", "사과", "학교", "컴퓨터", "자동차", "강아지"];
+
+function getTodayKey() {
+  const d = new Date();
+  return d.getFullYear() + "-" +
+         String(d.getMonth()+1).padStart(2,"0") + "-" +
+         String(d.getDate()).padStart(2,"0");
+}
+
+function getDailyAnswer() {
+  const d = new Date();
+  const start = new Date(2026, 0, 1);
+  const day = Math.floor((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - start) / 86400000);
+  return DAILY_WORDS[((day % DAILY_WORDS.length) + DAILY_WORDS.length) % DAILY_WORDS.length];
+}
+
+const todayKey = getTodayKey();
+const answer = getDailyAnswer();
+const storageKey = "newmantle-" + todayKey;
+
+let state = JSON.parse(localStorage.getItem(storageKey) || '{"attempts":0,"guesses":[]}');
+
+const guessInput = document.getElementById("guess");
+const submitBtn = document.getElementById("submitBtn");
+const results = document.getElementById("results");
+const message = document.getElementById("message");
+const attemptsEl = document.getElementById("attempts");
+const bestScoreEl = document.getElementById("bestScore");
+const dateLabel = document.getElementById("dateLabel");
+const modal = document.getElementById("modal");
+const answerEl = document.getElementById("answer");
+const resultText = document.getElementById("resultText");
+
+dateLabel.textContent = todayKey;
+
+function normalizeWord(word) {
+  return word.trim().replace(/\s+/g, "").toLowerCase();
+}
+
+function scoreWord(word) {
+  const normalized = normalizeWord(word);
+  const table = WORD_BANK[answer];
+
+  if (table[normalized] !== undefined) return table[normalized];
+
+  // 데이터에 없는 단어는 한글 글자 겹침을 이용한 아주 단순한 추정 점수
+  // 실제 의미 유사도는 아닙니다.
+  const unique = [...new Set(normalized)];
+  const answerChars = [...new Set(answer)];
+  const overlap = unique.filter(c => answerChars.includes(c)).length;
+
+  if (overlap > 0) return Math.min(25 + overlap * 8, 45);
+  return 1 + Math.floor(Math.random() * 8);
+}
+
+function save() {
+  localStorage.setItem(storageKey, JSON.stringify(state));
+}
+
+function colorForScore(score) {
+  if (score >= 90) return "#d93025";
+  if (score >= 75) return "#f4511e";
+  if (score >= 60) return "#fb8c00";
+  if (score >= 40) return "#f9a825";
+  if (score >= 20) return "#78909c";
+  return "#b0b7bf";
+}
+
+function render() {
+  attemptsEl.textContent = state.attempts;
+
+  const best = state.guesses.length
+    ? Math.max(...state.guesses.map(x => x.score))
+    : 0;
+  bestScoreEl.textContent = best.toFixed(2);
+
+  const sorted = [...state.guesses].sort((a,b) => b.score - a.score);
+
+  results.innerHTML = sorted.map((item, index) => `
+    <div class="result">
+      <div class="rank">${index + 1}</div>
+      <div class="word">${escapeHtml(item.word)}</div>
+      <div class="score">${item.score.toFixed(2)}</div>
+      <div class="bar">
+        <div class="fill" style="width:${item.score}%;background:${colorForScore(item.score)}"></div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function escapeHtml(str) {
+  return str.replace(/[&<>"']/g, c => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
+  }[c]));
+}
+
+function submitGuess() {
+  const word = guessInput.value.trim();
+
+  if (!word) {
+    message.textContent = "단어를 입력해주세요.";
+    guessInput.focus();
+    return;
+  }
+
+  const normalized = normalizeWord(word);
+
+  if (state.guesses.some(x => normalizeWord(x.word) === normalized)) {
+    message.textContent = "이미 입력한 단어입니다.";
+    guessInput.select();
+    return;
+  }
+
+  const score = scoreWord(word);
+  state.attempts++;
+  state.guesses.push({word, score});
+  save();
+  render();
+
+  guessInput.value = "";
+
+  if (normalized === normalizeWord(answer)) {
+    answerEl.textContent = answer;
+    resultText.innerHTML =
+      `<b>${state.attempts}번</b> 만에 맞혔습니다!<br>` +
+      `내일 새로운 단어로 다시 도전해보세요.`;
+    modal.classList.add("show");
+    message.textContent = "정답입니다! 🎉";
+  } else if (score >= 90) {
+    message.textContent = "🔥 엄청 가깝습니다!";
+  } else if (score >= 75) {
+    message.textContent = "🔥 아주 가까워요!";
+  } else if (score >= 50) {
+    message.textContent = "🙂 꽤 가까운 단어입니다.";
+  } else if (score >= 20) {
+    message.textContent = "🤔 조금 관련이 있어요.";
+  } else {
+    message.textContent = "🥶 아직 멀어요.";
+  }
+}
+
+submitBtn.addEventListener("click", submitGuess);
+guessInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") submitGuess();
+});
+document.getElementById("closeBtn").addEventListener("click", () => {
+  modal.classList.remove("show");
+});
+
+render();
+guessInput.focus();
+</script>
+</body>
+</html>
