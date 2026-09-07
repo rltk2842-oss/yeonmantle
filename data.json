@@ -1,0 +1,14 @@
+[
+{"id":1,"name":"루미","gender":"여성","crew":"오로라","start":"2021","age":27,"fans":183000},
+{"id":2,"name":"카이","gender":"남성","crew":"네온","start":"2020","age":31,"fans":245000},
+{"id":3,"name":"하루","gender":"여성","crew":"프리","start":"2022","age":24,"fans":97000},
+{"id":4,"name":"레온","gender":"남성","crew":"오로라","start":"2019","age":34,"fans":312000},
+{"id":5,"name":"미라","gender":"여성","crew":"네온","start":"2023","age":22,"fans":71000},
+{"id":6,"name":"도윤","gender":"남성","crew":"프리","start":"2021","age":28,"fans":154000},
+{"id":7,"name":"세나","gender":"여성","crew":"오로라","start":"2020","age":30,"fans":221000},
+{"id":8,"name":"태오","gender":"남성","crew":"네온","start":"2022","age":26,"fans":129000},
+{"id":9,"name":"유리","gender":"여성","crew":"프리","start":"2019","age":32,"fans":286000},
+{"id":10,"name":"준","gender":"남성","crew":"오로라","start":"2023","age":23,"fans":56000},
+{"id":11,"name":"나나","gender":"여성","crew":"네온","start":"2021","age":27,"fans":141000},
+{"id":12,"name":"민호","gender":"남성","crew":"프리","start":"2020","age":30,"fans":198000}
+]
